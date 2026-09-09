@@ -1,7 +1,10 @@
 import json
 from http.server import BaseHTTPRequestHandler
 from ariadne import graphql_sync
-from .schema import schema
+try:
+    from .schema import schema
+except ImportError:
+    from schema import schema
 
 class handler(BaseHTTPRequestHandler):
     def _set_cors_headers(self):
