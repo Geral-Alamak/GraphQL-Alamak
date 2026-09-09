@@ -1,0 +1,2 @@
+ariadne
+psycopg2-binary
