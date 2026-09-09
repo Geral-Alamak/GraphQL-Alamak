@@ -1,10 +1,13 @@
 import json
+import os
+import sys
 from http.server import BaseHTTPRequestHandler
+
+# Force Python to locate modules inside the api directory
+sys.path.append(os.path.dirname(__file__))
+
 from ariadne import graphql_sync
-try:
-    from .schema import schema
-except ImportError:
-    from schema import schema
+from schema import schema
 
 class handler(BaseHTTPRequestHandler):
     def _set_cors_headers(self):
@@ -13,7 +16,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
     def do_OPTIONS(self):
-        # Handle CORS preflight requests from Apollo Sandbox
         self.send_response(200)
         self._set_cors_headers()
         self.end_headers()
@@ -26,7 +28,21 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
-        data = json.loads(self.rfile.read(content_length))
+        if content_length == 0:
+            self.send_response(400)
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Empty request body"}')
+            return
+
+        try:
+            data = json.loads(self.rfile.read(content_length))
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self._set_cors_headers()
+            self.end_headers()
+            self.wfile.write(b'{"error": "Invalid JSON"}')
+            return
 
         success, result = graphql_sync(
             schema,
