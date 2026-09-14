@@ -1,6 +1,9 @@
-import os
 import psycopg2
 import psycopg2.extras
+#this bull
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.WARNING)
 from ariadne import QueryType, make_executable_schema
 
 type_defs = """
@@ -54,9 +57,10 @@ def resolve_author(*_, id):
 
 @query.field("books")
 def resolve_books(*_):
-    print("Executing resolve_books...")
+    # This will now explicitly show up when you check the "Warning" filter box
+    logger.warning("Executing resolve_books...") 
     result = _execute("SELECT * FROM books")
-    print(f"Data retrieved: {len(result)} records.")
+    logger.warning(f"Data retrieved: {len(result)} records.")
     return result
 
 @query.field("book")
