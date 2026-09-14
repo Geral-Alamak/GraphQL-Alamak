@@ -54,7 +54,10 @@ def resolve_author(*_, id):
 
 @query.field("books")
 def resolve_books(*_):
-    return _execute("SELECT * FROM books")
+    print("Executing resolve_books...")
+    result = _execute("SELECT * FROM books")
+    print(f"Data retrieved: {len(result)} records.")
+    return result
 
 @query.field("book")
 def resolve_book(*_, id):
