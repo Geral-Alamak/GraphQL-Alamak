@@ -1,7 +1,7 @@
 import os
 import psycopg2
 import psycopg2.extras
-from ariadne import QueryType, make_executable_schema, snake_case_fallback_resolvers
+from ariadne import QueryType, make_executable_schema
 
 type_defs = """
     type Author {
@@ -70,4 +70,4 @@ def resolve_review(*_, id):
     result = _execute("SELECT * FROM reviews WHERE review_id = %s", (id,))
     return result[0] if result else None
 
-schema = make_executable_schema(type_defs, query, snake_case_fallback_resolvers)
+schema = make_executable_schema(type_defs, query)
