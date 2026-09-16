@@ -45,16 +45,20 @@ query = QueryType()
 mutation = MutationType()
 
 def _execute(sql, params=()):
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute(sql, params)
+
+    conn.commit() 
+    
     try:
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(sql, params)
-        result = cur.fetchall()
-        cur.close()
-        conn.close()
-        return result
-    except Exception:
-        return []
+        result = cursor.fetchall()
+    except psycopg2.ProgrammingError:
+        result = None
+        
+    cursor.close()
+    conn.close()
+    return result
 
 @query.field("authors")
 def resolve_authors(*_):
