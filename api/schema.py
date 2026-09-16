@@ -44,11 +44,12 @@ query = QueryType()
 #Gae "mutation"
 mutation = MutationType()
 
-def _execute(sql, params=()):
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute(sql, params)
-
+def _execute(query, params=None):
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute(query, params)
+    
+    # Required to persist changes to Neon
     conn.commit() 
     
     try:
