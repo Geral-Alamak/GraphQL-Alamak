@@ -39,7 +39,9 @@ class handler(BaseHTTPRequestHandler):
             
         # 2. Handle GitHub Callback & Exchange Token
         elif 'callback' in self.path:
-            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            # Normalize query string to handle nested '?' from Vercel rewrite
+            raw_query = urllib.parse.urlparse(self.path).query.replace('?', '&')
+            query = urllib.parse.parse_qs(raw_query)
             code = query.get('code', [None])[0]
             
             if not code:
@@ -83,7 +85,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"token": token}).encode('utf-8'))
             return
-            
+
         # Default Fallback
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
