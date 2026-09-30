@@ -26,8 +26,11 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        # 1. Redirect to GitHub Provider
-        if 'login' in self.path:
+        # Get the original URL before Vercel's rewrite
+        original_uri = self.headers.get('x-forwarded-uri', self.path)
+        
+        # 1. Handle Login Redirect
+        if 'login' in original_uri:
             client_id = os.environ.get("GITHUB_CLIENT_ID")
             callback = os.environ.get("CALLBACK_URL")
             url = f"https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={callback}"
@@ -37,18 +40,27 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
             
-        # 2. Handle GitHub Callback & Exchange Token
-        elif 'callback' in self.path:
-            # Normalize query string to handle nested '?' from Vercel rewrite
-            raw_query = urllib.parse.urlparse(self.path).query.replace('?', '&')
-            query = urllib.parse.parse_qs(raw_query)
+        # 2. Handle Callback
+        elif 'callback' in original_uri or 'code=' in self.path:
+            # Check both the original URI and the Vercel rewritten path for the code
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(original_uri).query)
+            if 'code' not in query:
+                query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                
             code = query.get('code', [None])[0]
             
             if not code:
                 self.send_response(400)
                 self._set_cors_headers()
                 self.end_headers()
-                self.wfile.write(b'{"error": "Missing code parameter"}')
+                
+                # Debug output to see exactly what Vercel is sending
+                debug_info = {
+                    "error": "Missing code parameter",
+                    "self_path": self.path,
+                    "original_uri": original_uri
+                }
+                self.wfile.write(json.dumps(debug_info).encode('utf-8'))
                 return
             
             # Request Access Token from GitHub
@@ -85,7 +97,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"token": token}).encode('utf-8'))
             return
-
+            
         # Default Fallback
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
