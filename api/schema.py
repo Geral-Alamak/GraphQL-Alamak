@@ -1,13 +1,11 @@
 import os
+import logging
 import psycopg2
 import psycopg2.extras
-#this bull
-import logging
+from ariadne import QueryType, MutationType, make_executable_schema
+
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
-from ariadne import QueryType, make_executable_schema
-#Gae "mutation"
-from ariadne import MutationType
 
 type_defs = """
     type Author {
@@ -41,7 +39,6 @@ type_defs = """
 """
 
 query = QueryType()
-#Gae "mutation"
 mutation = MutationType()
 
 def _execute(query, params=None):
@@ -49,7 +46,7 @@ def _execute(query, params=None):
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute(query, params)
     
-    # Required to persist changes to Neon
+    # Persist changes to Neon
     conn.commit() 
     
     try:
@@ -70,7 +67,6 @@ def resolve_author(*_, id):
     result = _execute("SELECT * FROM authors WHERE author_id = %s", (id,))
     return result[0] if result else None
 
-#This shit uses warning to fucking print the variable
 @query.field("books")
 def resolve_books(*_):
     logger.warning("Executing resolve_books...") 
@@ -92,42 +88,8 @@ def resolve_review(*_, id):
     result = _execute("SELECT * FROM reviews WHERE review_id = %s", (id,))
     return result[0] if result else None
 
-#Mutation part - Create, Update, Delete (No Create, nde atas soale)
-@mutation.field("addBook")
-def resolve_add_book(*_, title, author_id):
-    # Example using your _execute function to run an INSERT query
-    query = "INSERT INTO books (title, author_id) VALUES (%s, %s) RETURNING *"
-    result = _execute(query, (title, author_id))
-    return result[0] if result else None
+# --- Protected Mutation Resolvers ---
 
-@mutation.field("updateBook")
-def resolve_update_book(*_, id, title=None, author_id=None):
-    fields = []
-    params = []
-    
-    if title is not None:
-        fields.append("title = %s")
-        params.append(title)
-    if author_id is not None:
-        fields.append("author_id = %s")
-        params.append(author_id)
-        
-    if not fields:
-        logger.warning("Its all none you donkey")
-        return None  # No fields provided to update
-        
-    params.append(id)
-    sql = f"UPDATE books SET {', '.join(fields)} WHERE book_id = %s RETURNING *"
-    result = _execute(sql, tuple(params))
-    return result[0] if result else None
-
-@mutation.field("deleteBook")
-def resolve_delete_book(*_, id):
-    sql = "DELETE FROM books WHERE book_id = %s RETURNING book_id"
-    result = _execute(sql, (id,))
-    return bool(result)  # Returns True if deleted, False if ID was not found
-
-#OAuth2
 @mutation.field("addBook")
 def resolve_add_book(_, info, title, author_id):
     if not info.context.get("user"):
