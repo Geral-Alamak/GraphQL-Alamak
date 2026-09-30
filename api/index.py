@@ -26,11 +26,8 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        # Extract the original requested URI before Vercel's rewrite
-        request_path = self.headers.get('x-forwarded-uri', self.path)
-
         # 1. Redirect to GitHub Provider
-        if 'auth/login' in request_path or '/login' in request_path:
+        if 'login' in self.path:
             client_id = os.environ.get("GITHUB_CLIENT_ID")
             callback = os.environ.get("CALLBACK_URL")
             url = f"https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={callback}"
@@ -41,8 +38,8 @@ class handler(BaseHTTPRequestHandler):
             return
             
         # 2. Handle GitHub Callback & Exchange Token
-        elif 'auth/callback' in request_path or '/callback' in request_path:
-            query = urllib.parse.parse_qs(urllib.parse.urlparse(request_path).query)
+        elif 'callback' in self.path:
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             code = query.get('code', [None])[0]
             
             if not code:
