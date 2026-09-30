@@ -27,7 +27,7 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         # 1. Redirect to GitHub Provider
-        if 'auth/login' in self.path:
+        if '/login' in self.path:
             client_id = os.environ.get("GITHUB_CLIENT_ID")
             callback = os.environ.get("CALLBACK_URL")
             url = f"https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={callback}"
@@ -38,7 +38,7 @@ class handler(BaseHTTPRequestHandler):
             return
             
         # 2. Handle GitHub Callback & Exchange Token
-        elif 'auth/callback' in self.path:
+        elif '/callback' in self.path:
             query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             code = query.get('code', [None])[0]
             
