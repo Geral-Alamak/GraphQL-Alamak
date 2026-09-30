@@ -127,4 +127,47 @@ def resolve_delete_book(*_, id):
     result = _execute(sql, (id,))
     return bool(result)  # Returns True if deleted, False if ID was not found
 
+#OAuth2
+@mutation.field("addBook")
+def resolve_add_book(_, info, title, author_id):
+    if not info.context.get("user"):
+        raise Exception("Unauthorized: silakan login terlebih dahulu")
+        
+    query = "INSERT INTO books (title, author_id) VALUES (%s, %s) RETURNING *"
+    result = _execute(query, (title, author_id))
+    return result[0] if result else None
+
+@mutation.field("updateBook")
+def resolve_update_book(_, info, id, title=None, author_id=None):
+    if not info.context.get("user"):
+        raise Exception("Unauthorized: silakan login terlebih dahulu")
+        
+    fields = []
+    params = []
+    
+    if title is not None:
+        fields.append("title = %s")
+        params.append(title)
+    if author_id is not None:
+        fields.append("author_id = %s")
+        params.append(author_id)
+        
+    if not fields:
+        logger.warning("Its all none you donkey")
+        return None
+        
+    params.append(id)
+    sql = f"UPDATE books SET {', '.join(fields)} WHERE book_id = %s RETURNING *"
+    result = _execute(sql, tuple(params))
+    return result[0] if result else None
+
+@mutation.field("deleteBook")
+def resolve_delete_book(_, info, id):
+    if not info.context.get("user"):
+        raise Exception("Unauthorized: silakan login terlebih dahulu")
+        
+    sql = "DELETE FROM books WHERE book_id = %s RETURNING book_id"
+    result = _execute(sql, (id,))
+    return bool(result)
+
 schema = make_executable_schema(type_defs, query, mutation)

@@ -1,2 +1,4 @@
 ariadne
 psycopg2-binary
+requests
+PyJWT
