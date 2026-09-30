@@ -1,4 +1,5 @@
 ariadne
+graphql-core==3.2.3
 psycopg2-binary
 requests
 PyJWT
